@@ -73,6 +73,7 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
         ...baseItems,
         { id: 'users', label: 'Usuarios', icon: Users },
         { id: 'reports', label: 'Reportes', icon: BarChart3 },
+        { id: 'audit', label: 'Auditoría', icon: Activity },
         { id: 'database-status', label: 'Base de Datos', icon: Database },
         { id: 'settings', label: 'Configuración', icon: Settings }
       ];

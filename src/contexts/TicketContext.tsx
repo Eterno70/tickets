@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { databaseService } from '../lib/database';
 import { supabase } from '../lib/supabase';
 import type { Ticket, User } from '../types';
+import { registrarAccionAuditoria } from '../lib/audit';
 
 interface TicketContextType {
   tickets: Ticket[];
@@ -160,13 +161,21 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
       if (newTicket) {
         // Add to local state immediately
         setTickets(prev => [newTicket, ...prev]);
-        
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'crear_ticket',
+            ticket_id: newTicket.id,
+            details: { titulo: newTicket.title, descripcion: newTicket.description, prioridad: newTicket.priority, categoria: newTicket.category }
+          });
+        }
         // Agregar información del creador para las notificaciones
         const ticketWithCreator = {
           ...newTicket,
-          createdByName: currentUser.name
+          createdByName: currentUser?.name || ''
         };
-        
         // Dispatch event for notifications - with a slight delay to ensure it's processed
         setTimeout(() => {
           console.log('🔔 Dispatching ticketCreated event for notifications');
@@ -175,7 +184,6 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
           });
           window.dispatchEvent(event);
         }, 100);
-        
         console.log('✅ Ticket creado:', newTicket.title);
       }
       
@@ -198,7 +206,26 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
             ? { ...ticket, ...updates, updatedAt: new Date() }
             : ticket
         ));
-        
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'actualizar_ticket',
+            ticket_id: id,
+            details: { updates }
+          });
+          // Auditar cambio de estado
+          if (updates.status) {
+            registrarAccionAuditoria({
+              user_id: currentUser.id,
+              user_name: currentUser.name,
+              action_type: 'cambio_estado_ticket',
+              ticket_id: id,
+              details: { nuevo_estado: updates.status }
+            });
+          }
+        }
         // Disparar eventos para notificaciones
         if (updates.assignedTo) {
           const ticket = tickets.find(t => t.id === id);
@@ -209,22 +236,6 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
                 assignedTo: updates.assignedTo, 
                 ticketTitle: ticket.title 
               } 
-            });
-            window.dispatchEvent(event);
-          }
-        }
-        
-        // Disparar evento para cambios de estado
-        if (updates.status) {
-          const ticket = tickets.find(t => t.id === id);
-          if (ticket) {
-            const event = new CustomEvent('ticketStatusChanged', {
-              detail: {
-                ticketId: id,
-                newStatus: updates.status,
-                ticketTitle: ticket.title,
-                changedBy: currentUser?.id
-              }
             });
             window.dispatchEvent(event);
           }
@@ -246,10 +257,18 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
       
       if (success) {
         setTickets(prev => prev.filter(ticket => ticket.id !== id));
-        
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'eliminar_ticket',
+            ticket_id: id,
+            details: {}
+          });
+        }
         const event = new CustomEvent('ticketDeleted', { detail: { ticketId: id } });
         window.dispatchEvent(event);
-        
         console.log('✅ Ticket eliminado');
       }
     } catch (error) {
@@ -260,6 +279,16 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
 
   const assignTicket = async (ticketId: string, userId: string) => {
     await updateTicket(ticketId, { assignedTo: userId });
+    // Registrar acción de auditoría de asignación de ticket
+    if (currentUser) {
+      registrarAccionAuditoria({
+        user_id: currentUser.id,
+        user_name: currentUser.name,
+        action_type: 'asignar_ticket',
+        ticket_id: ticketId,
+        details: { asignado_a: userId }
+      });
+    }
   };
 
   const getTicketsByUser = (userId: string) => {
@@ -273,11 +302,18 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const addUser = async (userData: Omit<User, 'id' | 'isOnline' | 'lastSeen'> & { password?: string }) => {
     try {
       console.log('👤 Creando usuario...');
-      
       const newUser = await databaseService.createUser(userData);
-      
       if (newUser) {
         setUsers(prev => [newUser, ...prev]);
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'crear_usuario',
+            details: { usuario_creado: newUser.id, datos: newUser }
+          });
+        }
         console.log('✅ Usuario creado:', newUser.name);
       }
     } catch (error) {
@@ -289,14 +325,29 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
       console.log('👤 Actualizando usuario:', id);
-      
       const success = await databaseService.updateUser(id, updates);
-      
       if (success) {
         setUsers(prev => prev.map(user => 
           user.id === id ? { ...user, ...updates } : user
         ));
-        
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'actualizar_usuario',
+            details: { usuario_actualizado: id, cambios: updates }
+          });
+          // Auditar cambio de rol
+          if (updates.role) {
+            registrarAccionAuditoria({
+              user_id: currentUser.id,
+              user_name: currentUser.name,
+              action_type: 'cambio_rol_usuario',
+              details: { usuario_actualizado: id, nuevo_rol: updates.role }
+            });
+          }
+        }
         console.log('✅ Usuario actualizado');
       }
     } catch (error) {
@@ -308,11 +359,18 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const deleteUser = async (id: string) => {
     try {
       console.log('👤 Eliminando usuario:', id);
-      
       const success = await databaseService.deleteUser(id);
-      
       if (success) {
         setUsers(prev => prev.filter(user => user.id !== id));
+        // Registrar acción de auditoría
+        if (currentUser) {
+          registrarAccionAuditoria({
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            action_type: 'eliminar_usuario',
+            details: { usuario_eliminado: id }
+          });
+        }
         console.log('✅ Usuario eliminado');
       }
     } catch (error) {

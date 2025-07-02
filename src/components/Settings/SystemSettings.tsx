@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Settings, Save, Bell, Mail, Shield, Database, Palette } from 'lucide-react';
+import { registrarAccionAuditoria } from '../../lib/audit';
 
 export function SystemSettings() {
   const { currentUser } = useAuth();
@@ -42,6 +43,15 @@ export function SystemSettings() {
   const handleSave = () => {
     // Here you would save settings to backend
     console.log('Saving settings:', settings);
+    // Registrar acción de auditoría de cambio de configuración
+    if (currentUser) {
+      registrarAccionAuditoria({
+        user_id: currentUser.id,
+        user_name: currentUser.name,
+        action_type: 'cambio_configuracion',
+        details: { settings }
+      });
+    }
     alert('Configuración guardada exitosamente');
   };
 

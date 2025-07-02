@@ -3,6 +3,7 @@ import { FileAttachment } from '../../types';
 import { Upload, X, File, Image, FileText, Archive, Trash2, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { registrarAccionAuditoria } from '../../lib/audit';
 
 interface FileUploadProps {
   onUpload: (files: FileAttachment[]) => void;
@@ -73,6 +74,16 @@ export function FileUpload({ onUpload, onClose }: FileUploadProps) {
     const fileToRemove = selectedFiles[index];
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
     
+    // Registrar acción de auditoría de eliminación de archivo
+    if (currentUser) {
+      registrarAccionAuditoria({
+        user_id: currentUser.id,
+        user_name: currentUser.name,
+        action_type: 'eliminar_archivo',
+        details: { nombre: fileToRemove.name, size: fileToRemove.size, type: fileToRemove.type }
+      });
+    }
+    
     // Remove preview if it exists
     if (previews[fileToRemove.name]) {
       setPreviews(prev => {
@@ -125,6 +136,15 @@ export function FileUpload({ onUpload, onClose }: FileUploadProps) {
       if (dbError) {
         alert(`Error guardando el archivo en la base de datos: ${dbError.message}`);
         continue;
+      }
+      // Registrar acción de auditoría de subida de archivo
+      if (currentUser) {
+        registrarAccionAuditoria({
+          user_id: currentUser.id,
+          user_name: currentUser.name,
+          action_type: 'subir_archivo',
+          details: { nombre: file.name, size: file.size, type: file.type, url: publicUrl }
+        });
       }
       attachments.push({
         id: dbData.id,

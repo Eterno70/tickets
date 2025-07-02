@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { databaseService } from '../lib/database';
 import { supabase } from '../lib/supabase';
 import type { ChatMessage, ChatRoom, FileAttachment, User } from '../types';
+import { registrarAccionAuditoria } from '../lib/audit';
 
 interface ChatContextType {
   chatRooms: Record<string, ChatRoom>;
@@ -264,6 +265,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             lastMessage: newMessage
           }
         }));
+        
+        // Registrar acción de auditoría
+        registrarAccionAuditoria({
+          user_id: currentUser.id,
+          user_name: currentUser.name,
+          action_type: 'mensaje',
+          ticket_id: ticketId,
+          message_id: newMessage.id,
+          details: { contenido: content, attachments }
+        });
         
         // Disparar evento para notificaciones
         const event = new CustomEvent('newMessage', { 

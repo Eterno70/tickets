@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { databaseService } from '../../lib/database';
 import { Mail, Lock, User, Loader, AlertCircle, Building } from 'lucide-react';
+import { registrarAccionAuditoria } from '../../lib/audit';
 
 export function LoginForm() {
   const { login, loading } = useAuth();
@@ -30,7 +31,15 @@ export function LoginForm() {
 
     try {
       const success = await login(email.trim(), password);
-      if (!success) {
+      if (success) {
+        // Registrar acción de auditoría de login
+        registrarAccionAuditoria({
+          user_id: success.id,
+          user_name: success.name,
+          action_type: 'login',
+          details: { email: email.trim(), user_agent: navigator.userAgent }
+        });
+      } else {
         setError('Usuario no encontrado. Usa uno de los botones de acceso rápido.');
       }
     } catch (err) {
@@ -153,7 +162,15 @@ export function LoginForm() {
   // Escuchar evento de logout para limpiar campos
   useEffect(() => {
     const handleUserLoggedOut = () => {
-      console.log('🧹 Usuario cerró sesión - Ejecutando limpieza completa...');
+      // Registrar acción de auditoría de logout
+      if (email) {
+        registrarAccionAuditoria({
+          user_id: '', // No hay usuario activo, solo email
+          user_name: '',
+          action_type: 'logout',
+          details: { email }
+        });
+      }
       resetFormCompletely();
     };
 

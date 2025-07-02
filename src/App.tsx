@@ -17,6 +17,7 @@ import { UserManagement } from './components/Users/UserManagement';
 import { ReportsAnalytics } from './components/Reports/ReportsAnalytics';
 import { SystemSettings } from './components/Settings/SystemSettings';
 import { DatabaseStatus } from './components/Admin/DatabaseStatus';
+import AuditPanel from './components/Admin/AuditPanel';
 
 function App() {
   function AppContent() {
@@ -227,6 +228,9 @@ function App() {
         
         case 'database-status':
           return <DatabaseStatus />;
+        
+        case 'audit':
+          return <AuditPanel />;
         
         default:
           return currentUser.role === 'admin' ? <ModernAdminPanel /> : <DashboardStats />;
