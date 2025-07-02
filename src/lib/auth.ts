@@ -33,7 +33,20 @@ export const authService = {
 
       // En un entorno real, aquí verificarías el hash de la contraseña
       // Por ahora, aceptamos cualquier contraseña para demo
-      console.log('✅ Usuario encontrado en Supabase');
+      //console.log('✅ Usuario encontrado en Supabase');
+      
+    // ...código anterior...
+    if (userError || !userData) {
+    console.error('❌ Usuario no encontrado:', userError);
+    return { user: null, error: 'Usuario no encontrado' };
+    }
+
+// Validar la contraseña en texto plano
+if (userData.password_hash !== password) {
+  console.error('❌ Contraseña incorrecta');
+  return { user: null, error: 'Contraseña incorrecta' };
+}
+      
 
       // Actualizar estado online
       await supabase
