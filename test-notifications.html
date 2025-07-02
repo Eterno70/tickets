@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Notificaciones - TicketFlow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        .notification-demo {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .notification-demo h4 {
+            margin: 0 0 10px 0;
+            color: #374151;
+        }
+        .notification-demo p {
+            margin: 5px 0;
+            color: #6b7280;
+        }
+        .test-results {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .test-results h4 {
+            margin: 0 0 10px 0;
+            color: #111827;
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        .test-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .test-pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .test-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .test-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔔 Test de Notificaciones en Tiempo Real - TicketFlow</h1>
+    
+    <div class="status info">
+        <strong>Instrucciones:</strong> Este archivo te ayudará a probar las notificaciones del sistema. 
+        Abre la aplicación principal en otra pestaña y usa estos botones para simular eventos.
+    </div>
+
+    <div class="test-section">
+        <h2>🎫 Pruebas de Tickets</h2>
+        <p>Simula la creación y modificación de tickets para probar las notificaciones.</p>
+        
+        <button class="test-button" onclick="testTicketCreated()">
+            Simular Ticket Creado
+        </button>
+        
+        <button class="test-button" onclick="testTicketAssigned()">
+            Simular Ticket Asignado
+        </button>
+        
+        <button class="test-button" onclick="testTicketStatusChange()">
+            Simular Cambio de Estado
+        </button>
+        
+        <div class="notification-demo">
+            <h4>Ejemplo de Notificación de Ticket:</h4>
+            <p><strong>Título:</strong> Nuevo ticket creado</p>
+            <p><strong>Mensaje:</strong> Juan Pérez creó: Problema con el sistema de agua</p>
+            <p><strong>Tipo:</strong> ticket-created</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>💬 Pruebas de Mensajes</h2>
+        <p>Simula el envío de mensajes para probar las notificaciones de chat.</p>
+        
+        <button class="test-button" onclick="testNewMessage()">
+            Simular Nuevo Mensaje
+        </button>
+        
+        <button class="test-button" onclick="testMessageWithAttachment()">
+            Simular Mensaje con Archivo
+        </button>
+        
+        <div class="notification-demo">
+            <h4>Ejemplo de Notificación de Mensaje:</h4>
+            <p><strong>Título:</strong> Nuevo mensaje</p>
+            <p><strong>Mensaje:</strong> María García: El problema ya está resuelto, pueden verificar</p>
+            <p><strong>Tipo:</strong> new-message</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔔 Pruebas de Notificaciones del Navegador</h2>
+        <p>Prueba las notificaciones nativas del navegador.</p>
+        
+        <button class="test-button" onclick="requestNotificationPermission()">
+            Solicitar Permisos
+        </button>
+        
+        <button class="test-button" onclick="testBrowserNotification()">
+            Probar Notificación del Navegador
+        </button>
+        
+        <div id="permission-status" class="status info">
+            <strong>Estado de Permisos:</strong> <span id="permission-text">Verificando...</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎵 Pruebas de Sonido</h2>
+        <p>Prueba los sonidos de notificación.</p>
+        
+        <button class="test-button" onclick="testNotificationSound()">
+            Reproducir Sonido de Notificación
+        </button>
+        
+        <button class="test-button" onclick="testCustomSound()">
+            Reproducir Sonido Personalizado
+        </button>
+    </div>
+
+    <div class="test-results">
+        <h4>📊 Resultados de Pruebas</h4>
+        <div id="test-results">
+            <div class="test-item">
+                <span>Permisos de Notificación</span>
+                <span class="test-status test-pending" id="permission-result">PENDIENTE</span>
+            </div>
+            <div class="test-item">
+                <span>Eventos de Ticket</span>
+                <span class="test-status test-pending" id="ticket-events-result">PENDIENTE</span>
+            </div>
+            <div class="test-item">
+                <span>Eventos de Mensaje</span>
+                <span class="test-status test-pending" id="message-events-result">PENDIENTE</span>
+            </div>
+            <div class="test-item">
+                <span>Sonido de Notificación</span>
+                <span class="test-status test-pending" id="sound-result">PENDIENTE</span>
+            </div>
+            <div class="test-item">
+                <span>Notificaciones del Navegador</span>
+                <span class="test-status test-pending" id="browser-notification-result">PENDIENTE</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Checklist de Pruebas Manuales</h2>
+        <p>Realiza estas pruebas en la aplicación principal:</p>
+        
+        <div style="background: #f9fafb; padding: 15px; border-radius: 6px;">
+            <h4>✅ Lista de Verificación:</h4>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Crear un ticket como usuario y verificar que los admins/técnicos reciban notificación</li>
+                <li>Asignar un ticket a un técnico y verificar que reciba notificación</li>
+                <li>Enviar un mensaje en un chat y verificar que el destinatario reciba notificación</li>
+                <li>Cambiar el estado de un ticket y verificar notificaciones</li>
+                <li>Verificar que las notificaciones aparezcan en el header</li>
+                <li>Verificar que el contador de no leídas se actualice</li>
+                <li>Verificar que al hacer clic en una notificación navegue al ticket correcto</li>
+                <li>Verificar que el sonido se reproduzca al recibir notificaciones</li>
+                <li>Verificar que las notificaciones del navegador funcionen (si están permitidas)</li>
+                <li>Verificar que marcar como leída funcione correctamente</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Verificar estado inicial de permisos
+        function checkPermissionStatus() {
+            if ('Notification' in window) {
+                const permission = Notification.permission;
+                const statusElement = document.getElementById('permission-text');
+                const resultElement = document.getElementById('permission-result');
+                
+                statusElement.textContent = permission;
+                
+                if (permission === 'granted') {
+                    resultElement.textContent = 'PERMITIDO';
+                    resultElement.className = 'test-status test-pass';
+                } else if (permission === 'denied') {
+                    resultElement.textContent = 'DENEGADO';
+                    resultElement.className = 'test-status test-fail';
+                } else {
+                    resultElement.textContent = 'PENDIENTE';
+                    resultElement.className = 'test-status test-pending';
+                }
+            } else {
+                document.getElementById('permission-text').textContent = 'No soportado';
+                document.getElementById('permission-result').textContent = 'NO SOPORTADO';
+                document.getElementById('permission-result').className = 'test-status test-fail';
+            }
+        }
+
+        // Solicitar permisos de notificación
+        async function requestNotificationPermission() {
+            if ('Notification' in window) {
+                try {
+                    const permission = await Notification.requestPermission();
+                    checkPermissionStatus();
+                    
+                    if (permission === 'granted') {
+                        showStatus('Permisos concedidos exitosamente', 'success');
+                    } else {
+                        showStatus('Permisos denegados por el usuario', 'error');
+                    }
+                } catch (error) {
+                    showStatus('Error solicitando permisos: ' + error.message, 'error');
+                }
+            } else {
+                showStatus('Las notificaciones no están soportadas en este navegador', 'error');
+            }
+        }
+
+        // Simular creación de ticket
+        function testTicketCreated() {
+            const event = new CustomEvent('ticketCreated', {
+                detail: {
+                    ticket: {
+                        id: 'test-ticket-' + Date.now(),
+                        title: 'Problema con el sistema de agua',
+                        createdByName: 'Juan Pérez (Test)'
+                    }
+                }
+            });
+            
+            window.dispatchEvent(event);
+            showStatus('Evento de ticket creado disparado', 'success');
+            updateTestResult('ticket-events-result', 'EJECUTADO', 'test-pass');
+        }
+
+        // Simular asignación de ticket
+        function testTicketAssigned() {
+            const event = new CustomEvent('ticketAssigned', {
+                detail: {
+                    ticketId: 'test-ticket-assigned-' + Date.now(),
+                    assignedTo: 'current-user',
+                    ticketTitle: 'Reparación de alumbrado público'
+                }
+            });
+            
+            window.dispatchEvent(event);
+            showStatus('Evento de ticket asignado disparado', 'success');
+            updateTestResult('ticket-events-result', 'EJECUTADO', 'test-pass');
+        }
+
+        // Simular cambio de estado
+        function testTicketStatusChange() {
+            const event = new CustomEvent('ticketStatusChanged', {
+                detail: {
+                    ticketId: 'test-ticket-status-' + Date.now(),
+                    newStatus: 'resolved',
+                    ticketTitle: 'Problema de conectividad',
+                    changedBy: 'other-user'
+                }
+            });
+            
+            window.dispatchEvent(event);
+            showStatus('Evento de cambio de estado disparado', 'success');
+            updateTestResult('ticket-events-result', 'EJECUTADO', 'test-pass');
+        }
+
+        // Simular nuevo mensaje
+        function testNewMessage() {
+            const event = new CustomEvent('newMessage', {
+                detail: {
+                    ticketId: 'test-ticket-message-' + Date.now(),
+                    senderId: 'other-user',
+                    content: 'El problema ya está resuelto, pueden verificar cuando gusten.',
+                    senderName: 'María García (Test)'
+                }
+            });
+            
+            window.dispatchEvent(event);
+            showStatus('Evento de nuevo mensaje disparado', 'success');
+            updateTestResult('message-events-result', 'EJECUTADO', 'test-pass');
+        }
+
+        // Simular mensaje con archivo
+        function testMessageWithAttachment() {
+            const event = new CustomEvent('newMessage', {
+                detail: {
+                    ticketId: 'test-ticket-attachment-' + Date.now(),
+                    senderId: 'other-user',
+                    content: '📎 Adjuntó evidencia fotográfica del problema resuelto',
+                    senderName: 'Carlos Técnico (Test)'
+                }
+            });
+            
+            window.dispatchEvent(event);
+            showStatus('Evento de mensaje con archivo disparado', 'success');
+            updateTestResult('message-events-result', 'EJECUTADO', 'test-pass');
+        }
+
+        // Probar notificación del navegador
+        function testBrowserNotification() {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const notification = new Notification('TicketFlow - Prueba', {
+                        body: 'Esta es una notificación de prueba del sistema',
+                        icon: '/vite.svg',
+                        tag: 'test-notification',
+                        requireInteraction: false
+                    });
+
+                    setTimeout(() => {
+                        notification.close();
+                    }, 5000);
+
+                    notification.onclick = () => {
+                        window.focus();
+                        notification.close();
+                        showStatus('Notificación clickeada correctamente', 'success');
+                    };
+
+                    showStatus('Notificación del navegador enviada', 'success');
+                    updateTestResult('browser-notification-result', 'EJECUTADO', 'test-pass');
+                } catch (error) {
+                    showStatus('Error enviando notificación: ' + error.message, 'error');
+                    updateTestResult('browser-notification-result', 'ERROR', 'test-fail');
+                }
+            } else {
+                showStatus('Permisos de notificación no concedidos', 'error');
+                updateTestResult('browser-notification-result', 'SIN PERMISOS', 'test-fail');
+            }
+        }
+
+        // Probar sonido de notificación
+        function testNotificationSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                
+                showStatus('Sonido de notificación reproducido', 'success');
+                updateTestResult('sound-result', 'EJECUTADO', 'test-pass');
+            } catch (error) {
+                showStatus('Error reproduciendo sonido: ' + error.message, 'error');
+                updateTestResult('sound-result', 'ERROR', 'test-fail');
+            }
+        }
+
+        // Probar sonido personalizado
+        function testCustomSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Sonido más elaborado
+                oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2); // G5
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.4);
+                
+                showStatus('Sonido personalizado reproducido', 'success');
+                updateTestResult('sound-result', 'EJECUTADO', 'test-pass');
+            } catch (error) {
+                showStatus('Error reproduciendo sonido personalizado: ' + error.message, 'error');
+                updateTestResult('sound-result', 'ERROR', 'test-fail');
+            }
+        }
+
+        // Mostrar estado
+        function showStatus(message, type) {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            
+            document.body.appendChild(statusDiv);
+            
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 5000);
+        }
+
+        // Actualizar resultado de prueba
+        function updateTestResult(elementId, text, className) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+                element.className = `test-status ${className}`;
+            }
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            checkPermissionStatus();
+            showStatus('Sistema de pruebas de notificaciones cargado', 'info');
+        });
+
+        // Escuchar eventos para verificar que funcionan
+        window.addEventListener('ticketCreated', (event) => {
+            console.log('✅ Evento ticketCreated recibido:', event.detail);
+        });
+
+        window.addEventListener('newMessage', (event) => {
+            console.log('✅ Evento newMessage recibido:', event.detail);
+        });
+
+        window.addEventListener('ticketAssigned', (event) => {
+            console.log('✅ Evento ticketAssigned recibido:', event.detail);
+        });
+
+        window.addEventListener('ticketStatusChanged', (event) => {
+            console.log('✅ Evento ticketStatusChanged recibido:', event.detail);
+        });
+    </script>
+</body>
+</html>
