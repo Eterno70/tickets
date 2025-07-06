@@ -100,11 +100,15 @@ export function TicketCard({ ticket, onClick, onDelete }: TicketCardProps) {
 
   const isAssignedToCurrentUser = currentUser.role === 'technician' && ticket.assignedTo === currentUser.id;
 
+  // ID especial del chat privado
+  const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
+
   return (
     <div 
-      className={`bg-white border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer relative ${
-        isAssignedToCurrentUser ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'
-      } ${ticket.status === 'open' && ticket.priority === 'urgent' ? 'ring-2 ring-red-200' : ''}`}
+      className={`bg-white border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer relative
+        ${isAssignedToCurrentUser ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'}
+        ${ticket.status === 'open' && ticket.priority === 'urgent' ? 'ring-2 ring-red-200' : ''}
+        ${ticket.id === PRIVATE_CHAT_ID ? 'bg-red-50 border-red-200' : ''}`}
       onClick={onClick}
     >
       {/* Botón de eliminar para administradores en la parte inferior derecha, posición absoluta */}

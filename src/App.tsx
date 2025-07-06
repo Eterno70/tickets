@@ -33,6 +33,13 @@ function App() {
       }
     }, [currentUser]);
 
+    // Solicitar permiso de notificaciones al iniciar sesión
+    React.useEffect(() => {
+      if (currentUser && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }, [currentUser]);
+
     // Set default view based on user role
     React.useEffect(() => {
       if (currentUser && !activeView) {
@@ -61,8 +68,16 @@ function App() {
 
       window.addEventListener('navigateToAdminSection', handleAdminNavigation as EventListener);
       
+      // Escuchar evento global para abrir chat automáticamente
+      const handleNavigateToChat = (event: CustomEvent<{ ticketId: string }>) => {
+        setSelectedTicketId(event.detail.ticketId);
+        setActiveView('chat');
+      };
+      window.addEventListener('navigateToChat', handleNavigateToChat as EventListener);
+
       return () => {
         window.removeEventListener('navigateToAdminSection', handleAdminNavigation as EventListener);
+        window.removeEventListener('navigateToChat', handleNavigateToChat as EventListener);
       };
     }, []);
 

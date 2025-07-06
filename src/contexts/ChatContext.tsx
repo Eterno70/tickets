@@ -4,6 +4,7 @@ import { databaseService } from '../lib/database';
 import { supabase } from '../lib/supabase';
 import type { ChatMessage, ChatRoom, FileAttachment, User } from '../types';
 import { registrarAccionAuditoria } from '../lib/audit';
+import Toast from '../components/Notifications/Toast';
 
 interface ChatContextType {
   chatRooms: Record<string, ChatRoom>;
@@ -30,6 +31,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ sender: string; message: string } | null>(null);
 
   // Función para reproducir sonido de mensaje
   const playMessageSound = useCallback(() => {
@@ -153,6 +155,29 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           // Solo reproducir sonido si el mensaje no es del usuario actual
           if (payload.new.sender_id !== currentUser.id) {
             playMessageSound();
+            setToast({
+              sender: payload.new.sender_name || 'Alguien',
+              message: payload.new.content.length > 50 ? payload.new.content.substring(0, 50) + '...' : payload.new.content
+            });
+            // Notificación del navegador solo si la pestaña está en segundo plano
+            if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+              const notification = new Notification(
+                payload.new.sender_name || 'Nuevo mensaje',
+                {
+                  body: payload.new.content.length > 50 ? payload.new.content.substring(0, 50) + '...' : payload.new.content,
+                  icon: '/logo-alcaldia.png',
+                  tag: payload.new.ticket_id
+                }
+              );
+              setTimeout(() => notification.close(), 5000);
+              notification.onclick = () => {
+                window.focus();
+                window.dispatchEvent(new CustomEvent('navigateToChat', { detail: { ticketId: payload.new.ticket_id } }));
+                notification.close();
+              };
+            }
+            // Abrir automáticamente el chat correspondiente
+            window.dispatchEvent(new CustomEvent('navigateToChat', { detail: { ticketId: payload.new.ticket_id } }));
             // Incrementar el contador de no leídos para todos los participantes excepto el remitente, para cualquier chat
             setChatRooms(prev => {
               const updatedRooms = { ...prev };
@@ -388,6 +413,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       playMessageSound
     }}>
       {children}
+      {toast && (
+        <Toast
+          sender={toast.sender}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </ChatContext.Provider>
   );
 }

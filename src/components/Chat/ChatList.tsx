@@ -96,20 +96,25 @@ export function ChatList({ selectedTicketId, onSelectTicket }: ChatListProps) {
     }
   };
 
+  // Cambiar identificador del chat privado a UUID especial
+  const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
+
   // Ordenar: primero los anclados (en orden de anclaje), luego el resto
-  const userTicketsRaw = getUserTickets().filter(ticket => {
-    const creator = users.find(u => u.id === ticket.createdBy);
-    const assignee = users.find(u => u.id === ticket.assignedTo);
-    const search = searchTerm.toLowerCase();
-    const matchesSearch =
-      ticket.title.toLowerCase().includes(search) ||
-      ticket.description.toLowerCase().includes(search) ||
-      (creator?.name?.toLowerCase().includes(search) ?? false) ||
-      (assignee?.name?.toLowerCase().includes(search) ?? false) ||
-      ticket.tags.some(tag => tag.toLowerCase().includes(search));
-    const matchesFilter = filterStatus === 'all' || ticket.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const userTicketsRaw = getUserTickets()
+    .filter(ticket => ticket.id !== PRIVATE_CHAT_ID) // Filtrar chat privado
+    .filter(ticket => {
+      const creator = users.find(u => u.id === ticket.createdBy);
+      const assignee = users.find(u => u.id === ticket.assignedTo);
+      const search = searchTerm.toLowerCase();
+      const matchesSearch =
+        ticket.title.toLowerCase().includes(search) ||
+        ticket.description.toLowerCase().includes(search) ||
+        (creator?.name?.toLowerCase().includes(search) ?? false) ||
+        (assignee?.name?.toLowerCase().includes(search) ?? false) ||
+        ticket.tags.some(tag => tag.toLowerCase().includes(search));
+      const matchesFilter = filterStatus === 'all' || ticket.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    });
   const pinnedIds = getPinnedTickets();
   const pinnedTickets = pinnedIds
     .map(id => userTicketsRaw.find(t => t.id === id))

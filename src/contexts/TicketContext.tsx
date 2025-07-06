@@ -4,6 +4,7 @@ import { databaseService } from '../lib/database';
 import { supabase } from '../lib/supabase';
 import type { Ticket, User } from '../types';
 import { registrarAccionAuditoria } from '../lib/audit';
+import Toast from '../components/Notifications/Toast';
 
 interface TicketContextType {
   tickets: Ticket[];
@@ -22,6 +23,7 @@ interface TicketContextType {
   unpinTicket: (ticketId: string) => void;
   isTicketPinned: (ticketId: string) => boolean;
   getPinnedTickets: () => string[];
+  getAllTickets: () => Ticket[]; // Nuevo método para admins
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined);
@@ -32,6 +34,26 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [pinnedTickets, setPinnedTickets] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
+
+  // Función para reproducir sonido de notificación
+  const playAssignSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('🔊 No se pudo reproducir sonido de asignación');
+    }
+  };
 
   // Cargar tickets anclados desde localStorage al iniciar
   useEffect(() => {
@@ -110,6 +132,19 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
         // Ticket actualizado
         setTickets(prev => prev.map(ticket => {
           if (ticket.id === payload.new.id) {
+            // Notificación de asignación para técnicos
+            if (
+              currentUser &&
+              currentUser.role === 'technician' &&
+              payload.new.assigned_to === currentUser.id &&
+              ticket.assignedTo !== currentUser.id // Solo si antes no estaba asignado
+            ) {
+              playAssignSound();
+              setToast({
+                title: 'Nuevo ticket asignado',
+                message: `Se te ha asignado el ticket: ${payload.new.title}`
+              });
+            }
             return {
               ...ticket,
               title: payload.new.title,
@@ -340,6 +375,9 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     return tickets.filter(ticket => ticket.assignedTo === userId);
   };
 
+  // Obtener todos los tickets (para administradores)
+  const getAllTickets = () => tickets;
+
   const addUser = async (userData: Omit<User, 'id' | 'isOnline' | 'lastSeen'> & { password?: string }) => {
     try {
       console.log('👤 Creando usuario...');
@@ -437,9 +475,17 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
       pinTicket,
       unpinTicket,
       isTicketPinned,
-      getPinnedTickets
+      getPinnedTickets,
+      getAllTickets // <-- Nuevo método para admins
     }}>
       {children}
+      {toast && (
+        <Toast
+          sender={toast.title}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </TicketContext.Provider>
   );
 }

@@ -12,20 +12,37 @@ interface TicketListProps {
 
 export function TicketList({ onTicketClick, onDeleteTicket }: TicketListProps) {
   const { currentUser } = useAuth();
-  const { tickets, getTicketsByUser, getTicketsByAssignee, users, getPinnedTickets, isTicketPinned } = useTickets();
+  const { tickets, getTicketsByUser, getTicketsByAssignee, users, getPinnedTickets, isTicketPinned, getAllTickets } = useTickets();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
+  // Estado dummy para forzar re-render
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Forzar re-render cuando cambia la cantidad de tickets o de tickets asignados al técnico
+  React.useEffect(() => {
+    if (currentUser?.role === 'technician') {
+      setForceUpdate(f => f + 1);
+    }
+  }, [getTicketsByAssignee(currentUser?.id).length]);
 
   if (!currentUser) return null;
+
+  // ID especial del chat privado
+  const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
 
   const getFilteredTickets = () => {
     let filteredTickets = currentUser.role === 'user' 
       ? getTicketsByUser(currentUser.id)
       : currentUser.role === 'technician'
       ? getTicketsByAssignee(currentUser.id)
-      : tickets;
+      : getAllTickets(); // Usar getAllTickets para admin
+
+    // Ocultar el ticket del chat privado para técnicos y administradores
+    if (currentUser.role === 'admin' || currentUser.role === 'technician') {
+      filteredTickets = filteredTickets.filter(ticket => ticket.id !== PRIVATE_CHAT_ID);
+    }
 
     // Status filter
     if (filter !== 'all') {

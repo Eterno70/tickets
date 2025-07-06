@@ -70,19 +70,17 @@ export const initializeRealtimeSubscriptions = () => {
   // Canal para tickets
   supabase.channel('tickets-changes')
     .on('postgres_changes', { 
-      event: 'INSERT', 
+      event: '*', // Escuchar INSERT y UPDATE
       schema: 'public',
       table: 'tickets'
     }, payload => {
       console.log('🔄 Cambio en tiempo real (tickets):', payload);
       const event = new CustomEvent('realtimeTicket', { detail: payload });
       window.dispatchEvent(event);
-      
       // Also dispatch a generic event for UI updates
       const updateEvent = new CustomEvent('ticketUpdated');
       window.dispatchEvent(updateEvent);
-      
-      // Dispatch a custom event for ticket creation specifically
+      // Dispatch a custom event for ticket creation específicamente
       if (payload.eventType === 'INSERT') {
         console.log('🔔 Nuevo ticket creado en tiempo real, disparando evento personalizado');
         const ticketEvent = new CustomEvent('ticketCreated', { 

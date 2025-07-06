@@ -30,7 +30,8 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
 
   // Si es chat privado, no buscamos ticket real
   const ticket = ticketId === PRIVATE_CHAT_ID ? null : tickets.find(t => t.id === ticketId);
-  const ticketMessages = messages[ticketId] || [];
+  // Filtrar mensajes solo del ticketId actual
+  const ticketMessages = (messages[ticketId] || []).filter(msg => msg.ticketId === ticketId);
   const creator = ticketId === PRIVATE_CHAT_ID ? null : users.find(u => u.id === ticket?.createdBy);
   const assignee = ticketId === PRIVATE_CHAT_ID ? null : users.find(u => u.id === ticket?.assignedTo);
 
