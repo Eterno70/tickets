@@ -5,7 +5,7 @@ import { useTickets } from '../../contexts/TicketContext';
 import { supabase } from '../../lib/supabase';
 import { ChatMessage } from './ChatMessage';
 import { FileUpload } from './FileUpload';
-import { Send, Paperclip, Loader, MoreVertical, Phone, Video, Info, Smile, Hash } from 'lucide-react';
+import { Send, Paperclip, Loader, MoreVertical, Info, Smile, Hash } from 'lucide-react';
 import { FileAttachment } from '../../types';
 
 interface ChatWindowProps {
@@ -242,24 +242,7 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <button className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Llamar">
-                <Phone className="w-5 h-5" />
-              </button>
-              <button className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Videollamada">
-                <Video className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => setShowTicketInfo(!showTicketInfo)}
-                className={`p-1.5 hover:bg-gray-100 rounded-lg transition-colors ${
-                  showTicketInfo ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'
-                }`}
-                title="Información del ticket"
-              >
-                <Info className="w-5 h-5" />
-              </button>
-              <button className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Más opciones">
-                <MoreVertical className="w-5 h-5" />
-              </button>
+              {/* Botón de más opciones eliminado por solicitud */}
             </div>
           </div>
 
@@ -313,12 +296,10 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Mensaje de bienvenida compacto */}
+            {/* Mensaje de bienvenida compacto sin icono Info */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-4">
               <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                  <Info className="w-4 h-4 text-white" />
-                </div>
+                <div />
                 <div>
                   <h4 className="text-xs font-semibold text-blue-900 mb-1">Chat de la Solicitud</h4>
                   <p className="text-sm text-blue-700">

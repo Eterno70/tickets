@@ -10,7 +10,7 @@ interface NotificationCenterProps {
 
 export function NotificationCenter({ onTicketClick }: NotificationCenterProps) {
   const { currentUser } = useAuth();
-  const { notifications, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, markAsRead, markAllAsRead, removeNotification } = useNotifications();
   
   // Force re-render when notifications change
   const [, setForceUpdate] = useState(0);
@@ -59,13 +59,15 @@ export function NotificationCenter({ onTicketClick }: NotificationCenterProps) {
   };
 
   const handleNotificationClick = (notification: any) => {
+    // Marcar como leída si no lo está
     if (!notification.isRead) {
       markAsRead(notification.id);
-      
-      // Dispatch event to force update of notification count
       const event = new CustomEvent('notificationRead');
       window.dispatchEvent(event);
     }
+    // Eliminar la notificación
+    removeNotification(notification.id);
+    // Navegar al chat del ticket
     onTicketClick(notification.ticketId);
   };
 
@@ -85,14 +87,9 @@ export function NotificationCenter({ onTicketClick }: NotificationCenterProps) {
       </div>
 
       {userNotifications.length === 0 ? (
-        <div className="text-center py-12">
-          <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No hay notificaciones
-          </h3>
-          <p className="text-gray-600">
-            Las notificaciones aparecerán aquí cuando tengas actividad nueva
-          </p>
+        <div className="text-center py-12 text-green-600">
+          <span className="text-3xl">✅</span>
+          <h3 className="text-lg font-semibold mt-2">Todas las notificaciones están leídas</h3>
         </div>
       ) : (
         <div className="space-y-2">

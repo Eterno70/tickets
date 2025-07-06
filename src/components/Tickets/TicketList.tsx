@@ -12,7 +12,7 @@ interface TicketListProps {
 
 export function TicketList({ onTicketClick, onDeleteTicket }: TicketListProps) {
   const { currentUser } = useAuth();
-  const { tickets, getTicketsByUser, getTicketsByAssignee, users } = useTickets();
+  const { tickets, getTicketsByUser, getTicketsByAssignee, users, getPinnedTickets, isTicketPinned } = useTickets();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -42,22 +42,20 @@ export function TicketList({ onTicketClick, onDeleteTicket }: TicketListProps) {
     }
 
     // Search filter
-   // Search filter
-if (search) {
-  filteredTickets = filteredTickets.filter(ticket => {
-    const creator = users.find(u => u.id === ticket.createdBy);
-    const assignee = users.find(u => u.id === ticket.assignedTo);
-    
-    return (
-      ticket.title.toLowerCase().includes(search.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(search.toLowerCase()) ||
-      ticket.category.toLowerCase().includes(search.toLowerCase()) ||
-      creator?.name.toLowerCase().includes(search.toLowerCase()) ||
-      assignee?.name.toLowerCase().includes(search.toLowerCase()) ||
-      ticket.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
-    );
-  });
-}
+    if (search) {
+      filteredTickets = filteredTickets.filter(ticket => {
+        const creator = users.find(u => u.id === ticket.createdBy);
+        const assignee = users.find(u => u.id === ticket.assignedTo);
+        const s = search.toLowerCase();
+        return (
+          ticket.title.toLowerCase().includes(s) ||
+          ticket.description.toLowerCase().includes(s) ||
+          (creator?.name?.toLowerCase().includes(s) ?? false) ||
+          (assignee?.name?.toLowerCase().includes(s) ?? false) ||
+          ticket.tags.some(tag => tag.toLowerCase().includes(s))
+        );
+      });
+    }
 
    return filteredTickets.sort((a, b) => {
   // First by creation date (newest first)
@@ -70,7 +68,14 @@ if (search) {
 });
 };
 
-  const filteredTickets = getFilteredTickets();
+  // Ordenar: primero los anclados (en orden de anclaje), luego el resto
+  const filteredTicketsRaw = getFilteredTickets();
+  const pinnedIds = getPinnedTickets();
+  const pinnedTickets = pinnedIds
+    .map(id => filteredTicketsRaw.find(t => t.id === id))
+    .filter(Boolean);
+  const unpinnedTickets = filteredTicketsRaw.filter(t => !pinnedIds.includes(t.id));
+  const filteredTickets = [...pinnedTickets, ...unpinnedTickets];
   
   const unassignedCount = currentUser.role === 'admin' 
     ? tickets.filter(t => !t.assignedTo).length 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useTickets } from '../../contexts/TicketContext';
+import { useChat } from '../../contexts/ChatContext';
 import { LogOut, Settings, Bell, X, User, Shield, Wrench, BarChart3, Users, ChevronDown } from 'lucide-react';
 
 interface HeaderProps {
@@ -77,7 +79,7 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
   if (!currentUser) return null;
 
   const unreadCount = getUnreadCount();
-  const userNotifications = getNotificationsByUser(currentUser.id);
+  const userNotifications = getNotificationsByUser(currentUser.id).filter(n => !n.isRead);
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -182,6 +184,19 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
 
   const roleInfo = getRoleInfo();
   const RoleIcon = roleInfo.icon;
+  const { removeAllNotifications } = useNotifications();
+
+  // --- Botón temporal para marcar todos los chats como leídos ---
+  const { tickets } = useTickets();
+  const { markAsRead: markChatAsRead } = useChat();
+  const marcarTodosLosChatsComoLeidos = async () => {
+    if (!currentUser) return;
+    for (const ticket of tickets) {
+      await markChatAsRead(ticket.id, currentUser.id);
+      console.log('Marcado como leído chat/ticket:', ticket.id);
+    }
+    alert('Todos los chats marcados como leídos');
+  };
 
   return (
     <>
@@ -239,12 +254,22 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
                   <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                     <h3 className="font-semibold text-gray-900">Notificaciones</h3>
                     <div className="flex items-center space-x-2">
-                      {unreadCount > 0 && (
+                      {userNotifications.length > 0 && (
                         <button
-                          onClick={markAllAsRead}
+                          onClick={async () => {
+                            console.log('🟦 Intentando marcar todas como leídas...');
+                            try {
+                              const result = await markAllAsRead();
+                              console.log('🟩 Resultado de markAllAsRead:', result);
+                              alert('Resultado de markAllAsRead: ' + result);
+                            } catch (err) {
+                              console.error('🟥 Error en markAllAsRead:', err);
+                              alert('Error en markAllAsRead: ' + err);
+                            }
+                          }}
                           className="text-sm text-blue-600 hover:text-blue-700"
                         >
-                          Marcar todas como leídas
+                          Mostrar todas como leídas
                         </button>
                       )}
                       <button
@@ -263,9 +288,9 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
                     }}
                   >
                     {userNotifications.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">
-                        <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                        <p>No hay notificaciones</p>
+                      <div className="p-4 text-center text-green-600">
+                        <span className="text-2xl">✅</span>
+                        <p className="mt-2 font-semibold">Todas las notificaciones están leídas</p>
                       </div>
                     ) : (
                       userNotifications.slice(0, 10).map((notification) => (
@@ -320,10 +345,7 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
               )}
             </div>
 
-            {/* Settings */}
-            <button className="p-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
-              <Settings className="w-5 h-5" />
-            </button>
+            {/* Botón de settings eliminado por solicitud */}
             
             {/* Logout */}
             <button

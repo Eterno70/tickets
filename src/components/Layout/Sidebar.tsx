@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useTickets } from '../../contexts/TicketContext';
 import { useEffect, useState } from 'react';
 import { 
   Ticket, 
@@ -25,8 +26,8 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, setActiveView }: SidebarProps) {
   const { currentUser } = useAuth();
-  const { getTotalUnreadCount } = useChat();
-  const { getUnreadCount } = useNotifications();
+  const { getTotalUnreadCount, getUnreadCount } = useChat();
+  const { tickets, getTicketsByUser, getTicketsByAssignee } = useTickets();
   
   // Force re-render when unread counts change
   const [, setForceUpdate] = useState(0);
@@ -52,7 +53,16 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
 
   if (!currentUser) return null;
 
-  const unreadChats = getTotalUnreadCount(currentUser.id);
+  // Solo contar los tickets visibles para el usuario
+  let userTickets: any[] = [];
+  if (currentUser.role === 'user') {
+    userTickets = getTicketsByUser(currentUser.id);
+  } else if (currentUser.role === 'technician') {
+    userTickets = getTicketsByAssignee(currentUser.id);
+  } else {
+    userTickets = tickets;
+  }
+  const unreadChats = userTickets.reduce((total, ticket) => total + (getUnreadCount(ticket.id, currentUser.id) || 0), 0);
   const unreadNotifications = getUnreadCount();
 
   const getMenuItems = () => {

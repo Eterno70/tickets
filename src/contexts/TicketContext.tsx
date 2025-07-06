@@ -18,6 +18,10 @@ interface TicketContextType {
   addUser: (user: Omit<User, 'id' | 'isOnline' | 'lastSeen'> & { password?: string }) => Promise<void>;
   updateUser: (id: string, updates: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  pinTicket: (ticketId: string) => void;
+  unpinTicket: (ticketId: string) => void;
+  isTicketPinned: (ticketId: string) => boolean;
+  getPinnedTickets: () => string[];
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined);
@@ -27,6 +31,42 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pinnedTickets, setPinnedTickets] = useState<string[]>([]);
+
+  // Cargar tickets anclados desde localStorage al iniciar
+  useEffect(() => {
+    if (currentUser) {
+      const key = `pinnedTickets_${currentUser.id}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        setPinnedTickets(JSON.parse(stored));
+      } else {
+        setPinnedTickets([]);
+      }
+    }
+  }, [currentUser]);
+
+  // Guardar tickets anclados en localStorage cuando cambian
+  useEffect(() => {
+    if (currentUser) {
+      const key = `pinnedTickets_${currentUser.id}`;
+      localStorage.setItem(key, JSON.stringify(pinnedTickets));
+    }
+  }, [pinnedTickets, currentUser]);
+
+  const pinTicket = (ticketId: string) => {
+    setPinnedTickets(prev => prev.includes(ticketId) ? prev : [...prev, ticketId]);
+  };
+
+  const unpinTicket = (ticketId: string) => {
+    setPinnedTickets(prev => prev.filter(id => id !== ticketId));
+  };
+
+  const isTicketPinned = (ticketId: string) => {
+    return pinnedTickets.includes(ticketId);
+  };
+
+  const getPinnedTickets = () => pinnedTickets;
 
   // Suscribirse a cambios en tiempo real para tickets
   React.useEffect(() => {
@@ -252,21 +292,22 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   const deleteTicket = async (id: string) => {
     try {
       console.log('🎫 Eliminando ticket:', id);
-      
+      // 1. Eliminar todos los registros de audit_logs relacionados con el ticket
+      await databaseService.deleteAuditLogsByTicketId(id);
+      // 2. Insertar un registro de auditoría indicando que el ticket fue eliminado
+      if (currentUser) {
+        await databaseService.createAuditLog({
+          user_id: currentUser.id,
+          user_name: currentUser.name,
+          action_type: 'eliminar_ticket',
+          ticket_id: null,
+          details: { mensaje: `El ticket con ID ${id} fue eliminado por ${currentUser.name} el ${new Date().toLocaleString()}` }
+        });
+      }
+      // 3. Eliminar el ticket
       const success = await databaseService.deleteTicket(id);
-      
       if (success) {
         setTickets(prev => prev.filter(ticket => ticket.id !== id));
-        // Registrar acción de auditoría
-        if (currentUser) {
-          registrarAccionAuditoria({
-            user_id: currentUser.id,
-            user_name: currentUser.name,
-            action_type: 'eliminar_ticket',
-            ticket_id: id,
-            details: {}
-          });
-        }
         const event = new CustomEvent('ticketDeleted', { detail: { ticketId: id } });
         window.dispatchEvent(event);
         console.log('✅ Ticket eliminado');
@@ -392,7 +433,11 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
       getTicketsByAssignee,
       addUser,
       updateUser,
-      deleteUser
+      deleteUser,
+      pinTicket,
+      unpinTicket,
+      isTicketPinned,
+      getPinnedTickets
     }}>
       {children}
     </TicketContext.Provider>

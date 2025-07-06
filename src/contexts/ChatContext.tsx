@@ -17,6 +17,7 @@ interface ChatContextType {
   getTotalUnreadCount: (userId: string) => number;
   loadMessages: (ticketId: string) => Promise<void>;
   clearError: () => void;
+  reloadUnreadCounts: () => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -357,6 +358,39 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, [chatRooms]);
 
+  // Función para recargar los contadores de mensajes no leídos desde el backend
+  const reloadUnreadCounts = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      console.log('🔄 ChatContext - Recargando contadores de mensajes no leídos...');
+      const unreadCounts = await databaseService.getChatRoomUnreadCounts(currentUser.id);
+      setChatRooms(prev => {
+        const updatedRooms = { ...prev };
+        Object.entries(unreadCounts).forEach(([roomId, count]) => {
+          if (updatedRooms[roomId]) {
+            updatedRooms[roomId] = {
+              ...updatedRooms[roomId],
+              unreadCount: {
+                ...updatedRooms[roomId].unreadCount,
+                [currentUser.id]: count
+              }
+            };
+          } else {
+            updatedRooms[roomId] = {
+              ticketId: roomId,
+              participants: [currentUser.id],
+              unreadCount: { [currentUser.id]: count }
+            };
+          }
+        });
+        return updatedRooms;
+      });
+      window.dispatchEvent(new CustomEvent('messagesRead'));
+    } catch (error) {
+      console.error('❌ ChatContext - Error recargando contadores:', error);
+    }
+  }, [currentUser]);
+
   return (
     <ChatContext.Provider value={{
       chatRooms,
@@ -369,7 +403,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       getUnreadCount,
       getTotalUnreadCount,
       loadMessages,
-      clearError
+      clearError,
+      reloadUnreadCounts
     }}>
       {children}
     </ChatContext.Provider>
