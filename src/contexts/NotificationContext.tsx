@@ -195,8 +195,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         showBrowserNotification(newNotification);
         
         // Dispatch event to force update of notification count in UI
-        const updateEvent = new CustomEvent('notificationReceived');
-        window.dispatchEvent(updateEvent);
+        window.dispatchEvent(new CustomEvent('notificationReceived'));
         
         console.log('✅ Notificación creada');
       } else {
@@ -318,8 +317,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         ));
         
         // Dispatch event to force update of notification count in UI
-        const updateEvent = new CustomEvent('notificationRead');
-        window.dispatchEvent(updateEvent);
+        window.dispatchEvent(new CustomEvent('notificationRead'));
       }
     } catch (error) {
       console.error('❌ Error marcando notificación como leída:', error);
@@ -357,7 +355,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const getUnreadCount = useCallback(() => {
     if (!currentUser) return 0;
-    return notifications.filter(n => n.userId === currentUser.id && !n.isRead).length;
+    const count = notifications.filter(n => n.userId === currentUser.id && !n.isRead).length;
+    console.log(`[NotificationContext] getUnreadCount para userId=${currentUser.id}:`, count, notifications);
+    return count;
   }, [notifications, currentUser]);
 
   const getNotificationsByUser = useCallback((userId: string) => {

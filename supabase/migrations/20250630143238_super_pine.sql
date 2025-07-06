@@ -35,3 +35,35 @@ BEGIN
     RAISE NOTICE 'chat_room_unread table does not exist, no changes needed';
   END IF;
 END $$;
+
+-- Permitir a admins y técnicos leer mensajes del canal privado
+CREATE POLICY "Admins y técnicos pueden leer chat privado"
+  ON chat_messages
+  FOR SELECT
+  TO authenticated
+  USING (
+    ticket_id = 'private-admin-tech'
+    AND (
+      EXISTS (
+        SELECT 1 FROM users u
+        WHERE u.id = auth.uid()
+        AND (u.role = 'admin' OR u.role = 'technician')
+      )
+    )
+  );
+
+-- Permitir a admins y técnicos insertar mensajes en el canal privado
+CREATE POLICY "Admins y técnicos pueden escribir en chat privado"
+  ON chat_messages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    ticket_id = 'private-admin-tech'
+    AND (
+      EXISTS (
+        SELECT 1 FROM users u
+        WHERE u.id = auth.uid()
+        AND (u.role = 'admin' OR u.role = 'technician')
+      )
+    )
+  );

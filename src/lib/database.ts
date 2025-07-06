@@ -310,6 +310,37 @@ export const databaseService = {
     }
   },
 
+  async getTicketById(id: string): Promise<Ticket | null> {
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error || !data) {
+        console.error('❌ Error obteniendo ticket por id:', error);
+        return null;
+      }
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        priority: data.priority,
+        category: data.category,
+        createdBy: data.created_by,
+        assignedTo: data.assigned_to,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        tags: data.tags || [],
+        attachments: data.attachments || []
+      };
+    } catch (error) {
+      console.error('❌ Error en getTicketById:', error);
+      return null;
+    }
+  },
+
   // === MENSAJES DE CHAT ===
   async getChatMessages(ticketId: string): Promise<ChatMessage[]> {
     try {
@@ -727,6 +758,28 @@ export const databaseService = {
       console.log('✅ Log de auditoría especial creado');
     } catch (error) {
       console.error('❌ Error en createAuditLog:', error);
+      throw error;
+    }
+  },
+
+  async createOrUpdateChatRoom(ticketId: string, participants: string[]): Promise<void> {
+    try {
+      // Verificar si ya existe el chat_room
+      const { data: existing, error: checkError } = await supabase
+        .from('chat_rooms')
+        .select('id')
+        .eq('ticket_id', ticketId)
+        .limit(1);
+      if (checkError) throw checkError;
+      if (existing && existing.length > 0) {
+        // Actualizar participantes si ya existe
+        await supabase.from('chat_rooms').update({ participants }).eq('ticket_id', ticketId);
+      } else {
+        // Crear nuevo chat_room
+        await supabase.from('chat_rooms').insert({ ticket_id: ticketId, participants });
+      }
+    } catch (error) {
+      console.error('❌ Error en createOrUpdateChatRoom:', error);
       throw error;
     }
   }

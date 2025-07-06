@@ -65,6 +65,9 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
   const unreadChats = userTickets.reduce((total, ticket) => total + (getUnreadCount(ticket.id, currentUser.id) || 0), 0);
   const unreadNotifications = getUnreadCount();
 
+  const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
+  const unreadPrivateChat = getUnreadCount(PRIVATE_CHAT_ID, currentUser.id);
+
   const getMenuItems = () => {
     const baseItems = [
       { 
@@ -74,7 +77,11 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
         icon: Ticket 
       },
       { id: 'chat', label: 'Chat', icon: MessageCircle, badge: unreadChats },
-      { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadNotifications }
+      // Nueva opción de chat privado solo para admin y técnicos
+      ...(currentUser.role === 'admin' || currentUser.role === 'technician' ? [
+        { id: 'private-chat', label: 'Chat Privado', icon: Shield, badge: unreadPrivateChat } // Mostramos el contador
+      ] : []),
+      { id: 'notifications', label: 'Notificaciones', icon: Bell },
     ];
 
     if (currentUser.role === 'admin') {
@@ -199,7 +206,7 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
                 <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-white' : ''}`} />
                 <span className="font-medium">{item.label}</span>
               </div>
-              {item.badge && item.badge > 0 && (
+              {item.badge && item.badge > 0 && item.id !== 'notifications' && (
                 <span className={`text-xs px-2 py-1 rounded-full min-w-[20px] text-center font-bold animate-pulse ${
                   isActive 
                     ? 'bg-white text-blue-600' 

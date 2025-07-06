@@ -232,6 +232,23 @@ function App() {
         case 'audit':
           return <AuditPanel />;
         
+        case 'private-chat':
+          // Solo admin y técnicos pueden ver este chat
+          if (currentUser.role === 'admin' || currentUser.role === 'technician') {
+            // Usamos un ID especial para el canal privado
+            const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
+            return (
+              <div className="flex h-full bg-gray-50">
+                {/* No hay lista de tickets, solo un canal privado */}
+                <div className="flex-1 min-w-0 bg-white border-l border-gray-200">
+                  <ChatWindow ticketId={PRIVATE_CHAT_ID} />
+                </div>
+              </div>
+            );
+          }
+          // Si no es admin ni técnico, no mostrar nada
+          return null;
+        
         default:
           return currentUser.role === 'admin' ? <ModernAdminPanel /> : <DashboardStats />;
       }

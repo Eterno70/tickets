@@ -14,7 +14,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ ticketId }: ChatWindowProps) {
   const { currentUser } = useAuth();
-  const { messages, sendMessage, markAsRead, loadMessages, loading, error } = useChat();
+  const { messages, sendMessage, markAsRead, loadMessages, loading, error, playMessageSound, setMessages } = useChat();
   const { tickets, users } = useTickets();
   const [newMessage, setNewMessage] = useState('');
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -25,10 +25,14 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const ticket = tickets.find(t => t.id === ticketId);
+  // Cambiar identificador del chat privado a UUID especial
+  const PRIVATE_CHAT_ID = '00000000-0000-0000-0000-000000000999';
+
+  // Si es chat privado, no buscamos ticket real
+  const ticket = ticketId === PRIVATE_CHAT_ID ? null : tickets.find(t => t.id === ticketId);
   const ticketMessages = messages[ticketId] || [];
-  const creator = users.find(u => u.id === ticket?.createdBy);
-  const assignee = users.find(u => u.id === ticket?.assignedTo);
+  const creator = ticketId === PRIVATE_CHAT_ID ? null : users.find(u => u.id === ticket?.createdBy);
+  const assignee = ticketId === PRIVATE_CHAT_ID ? null : users.find(u => u.id === ticket?.assignedTo);
 
   // Suscribirse a cambios en tiempo real para este ticket específico
   useEffect(() => {
@@ -46,53 +50,29 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
         filter: `ticket_id=eq.${ticketId}`
       }, payload => {
         console.log('🔄 ChatWindow - Nuevo mensaje en tiempo real:', payload);
-        
-        // Solo procesar si no es del usuario actual (para evitar duplicados)
+        // Solo reproducir sonido si el mensaje no es del usuario actual
         if (payload.new.sender_id !== currentUser.id) {
-          const newMessage = {
-            id: payload.new.id,
-            ticketId: payload.new.ticket_id,
-            senderId: payload.new.sender_id,
-            content: payload.new.content,
-            timestamp: new Date(payload.new.created_at),
-            attachments: payload.new.attachments || [],
-            isSystem: payload.new.is_system || false
-          };
-          
-          // Actualizar mensajes localmente
-          setMessages(prev => {
-            const currentMessages = prev[ticketId] || [];
-            // Verificar que el mensaje no esté ya en la lista
-            if (!currentMessages.some(msg => msg.id === newMessage.id)) {
-              return {
-                ...prev,
-                [ticketId]: [...currentMessages, newMessage]
-              };
-            }
-            return prev;
-          });
-          
-          // Reproducir sonido de notificación
-          try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-            oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.1);
-            
-            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.2);
-          } catch (error) {
-            console.log('🔊 No se pudo reproducir sonido de mensaje');
-          }
+          playMessageSound();
         }
+        // Agregar el mensaje recibido directamente al estado local
+        setMessages(prev => {
+          const currentMessages = prev[ticketId] || [];
+          if (!currentMessages.some(msg => msg.id === payload.new.id)) {
+            return {
+              ...prev,
+              [ticketId]: [...currentMessages, {
+                id: payload.new.id,
+                ticketId: payload.new.ticket_id,
+                senderId: payload.new.sender_id,
+                content: payload.new.content,
+                timestamp: new Date(payload.new.created_at),
+                attachments: payload.new.attachments || [],
+                isSystem: payload.new.is_system || false
+              }]
+            };
+          }
+          return prev;
+        });
       })
       .subscribe();
 
@@ -100,7 +80,7 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
       console.log('🔄 ChatWindow - Cancelando suscripción para ticket:', ticketId);
       subscription.unsubscribe();
     };
-  }, [ticketId, currentUser]);
+  }, [ticketId, currentUser, setMessages, playMessageSound]);
 
   // Cargar mensajes cuando cambia el ticket
   useEffect(() => {
@@ -112,20 +92,10 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
 
   // Marcar como leído cuando se abre el chat
   useEffect(() => {
-    if (currentUser && ticketId && ticketMessages.length > 0) {
-      console.log('🔄 ChatWindow - Marcando mensajes como leídos para ticket:', ticketId);
-      const markMessagesAsRead = async () => {
-        await markAsRead(ticketId, currentUser.id);
-        
-        // Dispatch event to force update of unread count in UI
-        const updateEvent = new CustomEvent('messagesRead', { detail: { ticketId } });
-        window.dispatchEvent(updateEvent);
-        console.log('✅ ChatWindow - Mensajes marcados como leídos y evento disparado');
-      };
-      
-      markMessagesAsRead();
+    if (currentUser && ticketId && messages[ticketId] && messages[ticketId].length > 0) {
+      markAsRead(ticketId, currentUser.id);
     }
-  }, [ticketId, currentUser, ticketMessages.length, markAsRead]);
+  }, [ticketId, currentUser, messages, markAsRead]);
 
   // Auto-scroll al final cuando llegan nuevos mensajes
   useEffect(() => {
@@ -174,7 +144,7 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
     }
   };
 
-  if (!currentUser || !ticket) {
+  if (!currentUser || (!ticket && ticketId !== PRIVATE_CHAT_ID)) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="text-center">
@@ -220,44 +190,49 @@ export function ChatWindow({ ticketId }: ChatWindowProps) {
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Hash className="w-5 h-5 text-white" />
               </div>
-              
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-gray-900 truncate">{ticket.title}</h3>
-                <div className="flex items-center space-x-3 mt-1">
-                  <span className="text-xs text-gray-500 font-mono">#{ticket.id.slice(0, 6)}</span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
-                    {ticket.status === 'open' && 'Abierto'}
-                    {ticket.status === 'in-progress' && 'En Progreso'}
-                    {ticket.status === 'resolved' && 'Resuelto'}
-                    {ticket.status === 'closed' && 'Cerrado'}
-                  </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(ticket.priority)}`}>
-                    {ticket.priority === 'urgent' && 'Urgente'}
-                    {ticket.priority === 'high' && 'Alta'}
-                    {ticket.priority === 'medium' && 'Media'}
-                    {ticket.priority === 'low' && 'Baja'}
-                  </span>
-                </div>
+                {ticketId === PRIVATE_CHAT_ID ? (
+                  <h3 className="text-base font-bold text-gray-900 truncate">Chat Privado (Administradores y Técnicos)</h3>
+                ) : (
+                  <h3 className="text-base font-bold text-gray-900 truncate">{ticket.title}</h3>
+                )}
+                {!ticketId === PRIVATE_CHAT_ID && (
+                  <div className="flex items-center space-x-3 mt-1">
+                    <span className="text-xs text-gray-500 font-mono">#{ticket.id.slice(0, 6)}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
+                      {ticket.status === 'open' && 'Abierto'}
+                      {ticket.status === 'in-progress' && 'En Progreso'}
+                      {ticket.status === 'resolved' && 'Resuelto'}
+                      {ticket.status === 'closed' && 'Cerrado'}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(ticket.priority)}`}>
+                      {ticket.priority === 'urgent' && 'Urgente'}
+                      {ticket.priority === 'high' && 'Alta'}
+                      {ticket.priority === 'medium' && 'Media'}
+                      {ticket.priority === 'low' && 'Baja'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-
             <div className="flex items-center space-x-2">
               {/* Botón de más opciones eliminado por solicitud */}
             </div>
           </div>
-
           {/* Participantes compactos */}
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-            <div className="flex items-center space-x-3 text-xs text-gray-600">
-              <span>Por: <span className="font-medium text-gray-900">{creator?.name}</span></span>
-              {assignee && (
-                <span>• Asignado: <span className="font-medium text-blue-600">{assignee.name}</span></span>
-              )}
+          {!ticketId === PRIVATE_CHAT_ID && (
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center space-x-3 text-xs text-gray-600">
+                <span>Por: <span className="font-medium text-gray-900">{creator?.name}</span></span>
+                {assignee && (
+                  <span>• Asignado: <span className="font-medium text-blue-600">{assignee.name}</span></span>
+                )}
+              </div>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {ticket.category}
+              </span>
             </div>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              {ticket.category}
-            </span>
-          </div>
+          )}
         </div>
       </div>
 
