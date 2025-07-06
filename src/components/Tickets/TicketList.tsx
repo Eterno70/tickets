@@ -91,7 +91,8 @@ export function TicketList({ onTicketClick, onDeleteTicket }: TicketListProps) {
       open: assignedTickets.filter(t => t.status === 'open').length,
       inProgress: assignedTickets.filter(t => t.status === 'in-progress').length,
       resolved: assignedTickets.filter(t => t.status === 'resolved').length,
-      urgent: assignedTickets.filter(t => t.priority === 'urgent').length
+      // Solo contar urgentes que NO estén cerrados ni resueltos
+      urgent: assignedTickets.filter(t => t.priority === 'urgent' && t.status !== 'closed' && t.status !== 'resolved').length
     };
   };
 
