@@ -12,6 +12,8 @@ interface NotificationContextType {
   markAllAsRead: () => Promise<void>;
   getUnreadCount: () => number;
   getNotificationsByUser: (userId: string) => AppNotification[];
+  removeNotification: (id: string) => void; // <-- Agregado
+  removeAllNotifications: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -166,6 +168,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const addNotification = useCallback(async (notificationData: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>) => {
     try {
+      // Evitar notificaciones para tickets eliminados
+      if (
+        notificationData.type === 'ticket-updated' &&
+        notificationData.message &&
+        notificationData.message.toLowerCase().includes('ha sido eliminado')
+      ) {
+        console.log('⛔ No se crea notificación para ticket eliminado');
+        return;
+      }
       console.log('🔔 Creando notificación:', notificationData.title);
       console.log('🔔 Detalles:', notificationData);
       
@@ -316,28 +327,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    if (!currentUser) return;
-    
+    if (!currentUser) return false;
     try {
       console.log('✅ Marcando todas las notificaciones como leídas');
-      
       const success = await databaseService.markAllNotificationsAsRead(currentUser.id);
-      
       if (success) {
         setNotifications(prev => prev.map(notification =>
           notification.userId === currentUser.id
             ? { ...notification, isRead: true }
             : notification
         ));
-        
-        // Dispatch event to force update of notification count in UI
-        const updateEvent = new CustomEvent('notificationRead');
-        window.dispatchEvent(updateEvent);
+        // Recargar notificaciones desde backend para forzar actualización visual
+        await loadNotifications();
+        // Dispatch event to force update of notification count in UI DESPUÉS de actualizar el estado
+        setTimeout(() => {
+          const updateEvent = new CustomEvent('notificationRead');
+          window.dispatchEvent(updateEvent);
+          console.log('✅ Estado de notificaciones tras marcar como leídas:', notifications);
+        }, 100);
+        return true;
+      } else {
+        return false;
       }
     } catch (error) {
       console.error('❌ Error marcando todas las notificaciones como leídas:', error);
+      return false;
     }
-  }, [currentUser]);
+  }, [currentUser, loadNotifications, notifications]);
 
   const getUnreadCount = useCallback(() => {
     if (!currentUser) return 0;
@@ -350,6 +366,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     );
   }, [notifications]);
 
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const removeAllNotifications = useCallback(async () => {
+    if (!currentUser) return;
+    await markAllAsRead();
+  }, [currentUser, markAllAsRead]);
+
   return (
     <NotificationContext.Provider value={{
       notifications,
@@ -358,7 +383,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       markAsRead,
       markAllAsRead,
       getUnreadCount,
-      getNotificationsByUser
+      getNotificationsByUser,
+      removeNotification,
+      removeAllNotifications
     }}>
       {children}
     </NotificationContext.Provider>

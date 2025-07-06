@@ -602,7 +602,7 @@ export const databaseService = {
         message: n.message,
         ticketId: n.ticket_id,
         userId: n.user_id,
-        isRead: n.is_read,
+        isRead: n.is_read === true || n.is_read === 'true' || n.is_read === 1,
         createdAt: new Date(n.created_at)
       }));
 
@@ -685,6 +685,48 @@ export const databaseService = {
       return true;
     } catch (error) {
       console.error('❌ Error en markAllNotificationsAsRead:', error);
+      throw error;
+    }
+  },
+
+  async deleteAuditLogsByTicketId(ticketId: string): Promise<void> {
+    try {
+      console.log('🗑️ Eliminando logs de auditoría para ticket:', ticketId);
+      const { error } = await supabase
+        .from('audit_logs')
+        .delete()
+        .eq('ticket_id', ticketId);
+      if (error) {
+        console.error('❌ Error eliminando logs de auditoría:', error);
+        throw error;
+      }
+      console.log('✅ Logs de auditoría eliminados');
+    } catch (error) {
+      console.error('❌ Error en deleteAuditLogsByTicketId:', error);
+      throw error;
+    }
+  },
+
+  async createAuditLog(log: { user_id: string, user_name: string, action_type: string, ticket_id: string, details: any }): Promise<void> {
+    try {
+      console.log('📝 Creando log de auditoría especial:', log);
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: log.user_id,
+          user_name: log.user_name,
+          action_type: log.action_type,
+          ticket_id: log.ticket_id,
+          details: log.details,
+          created_at: new Date().toISOString()
+        });
+      if (error) {
+        console.error('❌ Error creando log de auditoría especial:', error);
+        throw error;
+      }
+      console.log('✅ Log de auditoría especial creado');
+    } catch (error) {
+      console.error('❌ Error en createAuditLog:', error);
       throw error;
     }
   }

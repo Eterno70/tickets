@@ -8,11 +8,12 @@ import { Clock, User, MessageCircle, AlertTriangle, CheckCircle, Zap, UserPlus, 
 interface TicketCardProps {
   ticket: Ticket;
   onClick?: () => void;
+  onDelete?: () => void;
 }
 
-export function TicketCard({ ticket, onClick }: TicketCardProps) {
+export function TicketCard({ ticket, onClick, onDelete }: TicketCardProps) {
   const { currentUser } = useAuth();
-  const { users, updateTicket } = useTickets();
+  const { users, updateTicket, deleteTicket } = useTickets();
   const { getUnreadCount } = useChat();
   const [showAssignMenu, setShowAssignMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -64,6 +65,14 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
     setShowAssignMenu(false);
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('¿Estás seguro de que deseas eliminar este ticket? Esta acción no se puede deshacer.')) {
+      await deleteTicket(ticket.id);
+      if (onDelete) onDelete();
+    }
+  };
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('es-ES', {
       day: '2-digit',
@@ -98,6 +107,16 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
       } ${ticket.status === 'open' && ticket.priority === 'urgent' ? 'ring-2 ring-red-200' : ''}`}
       onClick={onClick}
     >
+      {/* Botón de eliminar para administradores en la parte inferior derecha, posición absoluta */}
+      {currentUser.role === 'admin' && (
+        <button
+          className="p-2 rounded-full hover:bg-red-100 transition-colors absolute bottom-4 right-4 z-10 shadow-md"
+          title="Eliminar ticket"
+          onClick={handleDelete}
+        >
+          <Trash2 className="w-6 h-6 text-red-500" />
+        </button>
+      )}
       {/* Priority and Status Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
