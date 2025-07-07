@@ -20,7 +20,9 @@ import { DatabaseStatus } from './components/Admin/DatabaseStatus';
 import AuditPanel from './components/Admin/AuditPanel';
 
 function App() {
+  console.log('App se está renderizando');
   function AppContent() {
+    console.log('AppContent se está renderizando');
     const { currentUser, loading } = useAuth();
     const [activeView, setActiveView] = useState('');
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
