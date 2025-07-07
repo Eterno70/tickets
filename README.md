@@ -3,7 +3,6 @@
 Sistema completo de gestión de tickets con chat en tiempo real, notificaciones y panel de administración conectado a Supabase.
 
 ## 🚀 Características
-##
 
 - **Autenticación con Supabase** 
 - **Chat en tiempo real** entre usuarios y técnicos
