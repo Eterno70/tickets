@@ -29,7 +29,7 @@ export function Header({ onNavigateToTicket }: HeaderProps) {
           if (permission === 'granted' && currentUser) {
             const notification = new Notification('Bienvenido a TicketFlow', {
               body: `Hola ${currentUser.name}, ahora recibirás notificaciones de tus tickets`,
-              icon: '/Logo.png'
+              icon: import.meta.env.BASE_URL + 'Logo.png'
             });
             
             // Cerrar la notificación después de 5 segundos

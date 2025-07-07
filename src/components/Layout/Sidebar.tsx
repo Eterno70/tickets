@@ -30,11 +30,11 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
   const { tickets, getTicketsByUser, getTicketsByAssignee } = useTickets();
   
   // Force re-render when unread counts change
-  const [, setForceUpdate] = useState(0);
+  const [, setForceUpdate] = useState<number>(0);
   
   // Update component when notifications or messages change
   useEffect(() => {
-    const handleCountUpdate = () => {
+    const handleCountUpdate = (_event?: any) => {
       setForceUpdate(prev => prev + 1);
     };
     
@@ -151,7 +151,7 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
       <div className="flex items-center mb-8">
         <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-2 shadow-lg flex items-center justify-center">
           <img 
-            src="/logo-alcaldia.png" 
+            src={import.meta.env.BASE_URL + 'logo-alcaldia.png'} 
             alt="Alcaldía de Cabañas Oeste" 
             className="w-full h-full object-contain"
             onError={(e) => {

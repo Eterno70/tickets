@@ -278,7 +278,7 @@ export function ModernAdminPanel() {
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg flex items-center justify-center">
                 <img 
-                  src="/logo-alcaldia.png" 
+                  src={import.meta.env.BASE_URL + 'logo-alcaldia.png'} 
                   alt="Alcaldía de Cabañas Oeste" 
                   className="w-8 h-8 object-contain filter brightness-0 invert"
                   onError={(e) => {

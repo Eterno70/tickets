@@ -153,7 +153,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }, payload => {
           console.log('[ChatContext] Evento recibido de Supabase:', payload);
           // Solo reproducir sonido si el mensaje no es del usuario actual
-          if (payload.new.sender_id !== currentUser.id) {
+          if (currentUser && payload.new.sender_id !== currentUser.id) {
             playMessageSound();
             setToast({
               sender: payload.new.sender_name || 'Alguien',
@@ -165,7 +165,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 payload.new.sender_name || 'Nuevo mensaje',
                 {
                   body: payload.new.content.length > 50 ? payload.new.content.substring(0, 50) + '...' : payload.new.content,
-                  icon: '/logo-alcaldia.png',
+                  icon: import.meta.env.BASE_URL + 'logo-alcaldia.png',
                   tag: payload.new.ticket_id
                 }
               );
